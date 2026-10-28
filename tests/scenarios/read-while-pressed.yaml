@@ -1,0 +1,12 @@
+scenario: 1
+name: guiassert/read-while-pressed
+pack: notes-app
+summary: Nothing is read between a pointer press and its release.
+stage:
+  - use: seed-notes
+    with: { fixture: ../support/doubtful-titles.json }
+  - use: launch-app
+steps:
+  - press: { at: 'note-list/note[title="Taxes"]', button: left }
+  - expect: { at: 'note-list/note[title="Taxes"]', selected: true }
+  - release: { at: 'note-list/note[title="Taxes"]', button: left }

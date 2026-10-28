@@ -1,0 +1,10 @@
+scenario: 1
+name: guiassert/doubtful-title
+pack: notes-app
+summary: A title the OCR engine reads below its confidence floor cannot be read.
+stage:
+  - use: seed-notes
+    with: { fixture: ../support/doubtful-titles.json }
+  - use: launch-app
+steps:
+  - expect: { at: note-list, order: [Taxes, "#%&@#"] }

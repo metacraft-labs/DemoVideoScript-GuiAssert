@@ -1,0 +1,45 @@
+# dvs5 mutation results — 2026-10-28 15:29:45 +0200
+# kill command: just test
+
+KILLED   G1      102.4s  a click offset by a pixel band outside the role
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../dvs-core/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src -
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
+           | error: Recipe `test-adapter` failed on line 49 with exit code 1
+KILLED   G2      100.4s  an OCR read accepted below its confidence floor
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../dvs-core/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src -
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
+           | error: Recipe `test-adapter` failed on line 49 with exit code 1
+KILLED   G3       82.9s  settled declared at the first unchanged capture, before the window stopped changing
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../dvs-core/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src -
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
+           | error: Recipe `test-adapter` failed on line 49 with exit code 1
+KILLED   G4     1259.2s  settled after a quiet span shorter than the application's pauses
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 python3 ../dvs-core/src/../tests/protocol_conformance.py $BUILD_DIR/bin/dvs-guiassert-notes ../dvs-core/src/../conformanc
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 $BUILD_DIR/bin/dvs-guiassert-notes conformance --pack ../dvs-core/src/../conformance/pack/notes-app.pack.yaml --backend g
+           | error: Recipe `test-conformance` failed on line 40 with exit code 1
+KILLED   G5     1003.6s  a held modifier dropped
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 python3 ../dvs-core/src/../tests/protocol_conformance.py $BUILD_DIR/bin/dvs-guiassert-notes ../dvs-core/src/../conformanc
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 $BUILD_DIR/bin/dvs-guiassert-notes conformance --pack ../dvs-core/src/../conformance/pack/notes-app.pack.yaml --backend g
+           | error: Recipe `test-conformance` failed on line 40 with exit code 1
+KILLED   G6       73.5s  a stale read: the window is not read again after an input
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../dvs-core/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src -
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
+           | error: Recipe `test-adapter` failed on line 49 with exit code 1
+KILLED   G7       83.4s  a reversed (selected) row given to OCR without inverting it
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../dvs-core/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src -
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
+           | error: Recipe `test-adapter` failed on line 49 with exit code 1
+KILLED   G8       66.6s  a read answered from the screen before a pending press
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../dvs-core/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src -
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
+           | error: Recipe `test-adapter` failed on line 49 with exit code 1
+KILLED   G9      888.6s  Shift delivered as Ctrl
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 python3 ../dvs-core/src/../tests/protocol_conformance.py $BUILD_DIR/bin/dvs-guiassert-notes ../dvs-core/src/../conformanc
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 $BUILD_DIR/bin/dvs-guiassert-notes conformance --pack ../dvs-core/src/../conformance/pack/notes-app.pack.yaml --backend g
+           | error: Recipe `test-conformance` failed on line 40 with exit code 1
+KILLED   G10      53.9s  a box's sides not recognised: no menu or dialog is found
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../dvs-core/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src -
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
+           | error: Recipe `test-adapter` failed on line 49 with exit code 1
+
+10/10 killed, 0 survived

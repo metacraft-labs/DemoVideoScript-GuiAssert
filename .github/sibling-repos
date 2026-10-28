@@ -1,0 +1,4 @@
+# Siblings cloned by setup-dev-env, each at an explicit commit: the adapter is
+# built and qualified against exactly these.
+DemoVideoScript=8e0e0ce8f5681e8b5bf402f01ff0fa744703f3af  # DemoVideoScript@agents: the conformance application's native-window build
+GuiAssert=e996cc69f14715163c21e37f5edbfcc7276d7d28  # GuiAssert@agents: gestures, and drags with modifiers held

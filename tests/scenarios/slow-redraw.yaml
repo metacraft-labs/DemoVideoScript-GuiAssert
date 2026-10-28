@@ -1,0 +1,10 @@
+scenario: 1
+name: guiassert/slow-redraw
+pack: slow
+stage:
+  - use: launch-slow
+steps:
+  - key: x
+  - expect: { at: screen, bars: 3 }
+  - key: y
+  - expect: { at: screen, bars: 3 }
