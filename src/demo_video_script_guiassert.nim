@@ -528,7 +528,13 @@ proc sendAction(a: Adapter; act: JsonNode) =
       of "down": (0, n)
       of "left": (-n, 0)
       else: (n, 0)
-    a.deliver("scrolling", proc () = discard a.ctx.input.scroll("", p, dx, dy, suLine))
+    if a.held == {}:
+      a.deliver("scrolling", proc () = discard a.ctx.input.scroll("", p, dx, dy, suLine))
+    else:
+      # the held modifiers are down while the wheel turns (Shift+wheel): one
+      # gesture, which releases them again at its end as every request does
+      a.gesture(keyDowns(a.held) &
+                @[GestureStep(kind: gsScroll, wheelAt: p, dx: dx, dy: dy, unit: suLine)])
   else:
     raise backendError(beProtocol, "send: no input action in " & $act)
   a.idx.clear()

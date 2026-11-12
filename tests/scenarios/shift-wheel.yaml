@@ -1,0 +1,13 @@
+scenario: 1
+name: guiassert/shift-wheel
+pack: slow
+summary: The wheel turned with Shift held reaches the application with Shift; without it, without.
+stage:
+  - use: launch-slow
+steps:
+  - wheel: { at: screen, direction: down, amount: 2 }
+  - expect: { at: screen, plain: 2, shifted: 0 }
+  - press: Shift
+  - wheel: { at: screen, direction: down, amount: 1 }
+  - release: Shift
+  - expect: { at: screen, plain: 2, shifted: 1 }

@@ -45,6 +45,8 @@ ARMS = [
     Arm("G10", B, "  if colsWith.len == 1 and rowsWith.len >= h div 2 and runs == 1: return '|'",
         "  if false: return '|'",
         "a box's sides not recognised: no menu or dialog is found"),
+    Arm("G11", A, "    if a.held == {}:\n      a.deliver(\"scrolling\"", "    if true:\n      a.deliver(\"scrolling\"",
+        "a wheel turned without the modifiers held"),
 ]
 
 if __name__ == "__main__":

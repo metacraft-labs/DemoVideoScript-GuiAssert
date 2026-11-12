@@ -99,3 +99,31 @@ suite "the GuiAssert adapter":
                                      "--record", "off"])
       checkpoint o
       check code == 0
+
+  test "a wheel turned with Shift held arrives with Shift":
+    let slow = bin / "slow-redraw"
+    let (o, code) = runRaw(slow, @["run", here / "scenarios/shift-wheel.yaml", "--pack",
+                                   here / "support/slow.pack.yaml", "--backend", "guiassert",
+                                   "--record", "off"])
+    checkpoint o
+    check code == 0
+
+  test "a passing run keeps its capture's still without --record always":
+    let build = getTempDir() / "dga-cap-" & $getCurrentProcessId()
+    defer: removeDir(build)
+    let (o, code) = runRaw(tool, @["run", scenarios / "archive-from-keyboard.yaml", "--pack", pack,
+                                   "--backend", "guiassert", "--build", build])
+    checkpoint o
+    check code == 0
+    var stills: seq[string]
+    for f in walkDirRec(build / "scenario-runs"):
+      if f.endsWith(".png"): stills.add f
+    checkpoint $stills
+    # the capture step's still, and nothing of the recording beside it
+    check stills.len == 1
+    check stills.len == 1 and stills[0].extractFilename.endsWith("-after-archive.png")
+    check stills.len == 1 and readFile(stills[0]).startsWith("\x89PNG")
+    var media = 0
+    for f in walkDirRec(build / "scenario-runs"):
+      if f.endsWith(".mp4"): inc media
+    check media == 0

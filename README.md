@@ -24,11 +24,13 @@ What it does:
   names, clicks with modifiers, the wheel, moves, hovers and drags, a realistic pointer
   path as one gesture. GuiAssert releases whatever a request leaves held, so the adapter
   holds modifier keys itself and delivers a pointer press and its release together, as
-  one gesture, when the release comes; a read between the two is refused.
+  one gesture, when the release comes; a read between the two is refused. The wheel
+  turned while a modifier is held (Shift+wheel) is one gesture too, with the keys down.
 - **Settled** is a window that stopped changing: captures 60 ms apart, all equal over at
   least 300 ms of the clock.
 - **Recordings**: a video of the window (GuiAssert's recorder and `ffmpeg`) and a PNG
-  still per step.
+  still per step. A `capture` step's still is the scenario's output, not part of the
+  recording: the runner keeps it from a passing run whatever `--record` says.
 - **Capabilities** are honest about vision: no `observe.style`, no `observe.image`.
 
 The conformance application's binding (`conformance/notes_vision.nim`) is the worked

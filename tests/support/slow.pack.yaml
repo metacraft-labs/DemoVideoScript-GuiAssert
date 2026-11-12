@@ -3,6 +3,7 @@ name: slow
 root: screen
 roles:
   screen:
-    properties: { bars: int }
+    properties: { bars: int, shifted: int, plain: int }
+    affordances: [wheel]
 stages:
   launch-slow: ~
