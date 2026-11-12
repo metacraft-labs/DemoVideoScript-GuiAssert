@@ -23,7 +23,7 @@ ARMS = [
     Arm("G2", B, "    if cell.ink and cell.shape == '\\0' and cell.confidence < floor:",
         "    if cell.ink and cell.shape == '\\0' and cell.confidence < 0:",
         "an OCR read accepted below its confidence floor"),
-    Arm("G3", A, "      if (started - quietSince).inMilliseconds >= QuietSpanMs: return true",
+    Arm("G3", A, "      if quietLongEnough(quietSince, started): return true",
         "      return true",
         "settled declared at the first unchanged capture, before the window stopped changing"),
     Arm("G4", A, "  QuietSpanMs = 300", "  QuietSpanMs = 100",

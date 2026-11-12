@@ -287,6 +287,12 @@ proc smooth*(img: GrayImage; radius: int): GrayImage =
 
 # --- the surface ------------------------------------------------------------------------
 
+proc quietLongEnough*(quietSince, sampled: MonoTime): bool =
+  ## Whether a window unchanged from `quietSince` to `sampled` has settled:
+  ## at least `QuietSpanMs` of the clock. An application's pause between two
+  ## redraws that is shorter than that is not the end of its redraw.
+  (sampled - quietSince).inMilliseconds >= QuietSpanMs
+
 proc settle(a: Adapter; timeoutMs = 5000): bool =
   ## The window stopped changing: captures `QuietIntervalMs` apart were all
   ## equal over at least `QuietSpanMs`, from the end of the first capture to
@@ -300,7 +306,7 @@ proc settle(a: Adapter; timeoutMs = 5000): bool =
     let started = getMonoTime()
     let next = a.ctx.grab()
     if next.image.pixels == last.image.pixels:
-      if (started - quietSince).inMilliseconds >= QuietSpanMs: return true
+      if quietLongEnough(quietSince, started): return true
     else:
       quietSince = getMonoTime()
     last = next

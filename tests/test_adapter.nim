@@ -4,7 +4,8 @@
 ## the built `dvs-guiassert-notes` (or `slow-redraw`), read by real captures and
 ## a real OCR engine; no stand-ins.
 
-import std/[json, os, osproc, strutils, unittest, streams]
+import std/[json, os, osproc, strutils, unittest, streams, monotimes, times]
+import demo_video_script_guiassert
 
 let bin = getEnv("DVS_BIN_DIR", "build/bin")
 let tool = bin / "dvs-guiassert-notes"
@@ -90,6 +91,17 @@ suite "the GuiAssert adapter":
     checkpoint $r
     check r["outcome"].getStr == "failed"
     check "not yet released" in $r["steps"]
+
+  test "a pause between redraws shorter than the quiet span is not settled":
+    # The slow-redraw application pauses 200 ms between its bursts, on its own
+    # clock. Whether the end-to-end check below sees `settled` reported inside
+    # such a pause depends on how fast a capture is on the machine (a loaded
+    # one takes longer than the pause to compare two frames), so the span
+    # itself is checked here, against the clock alone.
+    let t = getMonoTime()
+    check not quietLongEnough(t, t + initDuration(milliseconds = 200))
+    check not quietLongEnough(t, t + initDuration(milliseconds = 299))
+    check quietLongEnough(t, t + initDuration(milliseconds = 300))
 
   test "settled waits for the last of several redraw bursts":
     let slow = bin / "slow-redraw"
