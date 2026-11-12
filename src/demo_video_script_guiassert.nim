@@ -177,9 +177,12 @@ proc ensureDisplay(ctx: GuiContext) =
 
 # --- the application ---------------------------------------------------------------------
 
-proc startApp*(ctx: GuiContext; argv: seq[string]; title: string; timeoutMs = 20_000) =
+proc startApp*(ctx: GuiContext; argv: seq[string]; title: string; timeoutMs = 20_000;
+               titleContains = false) =
   ## Starts the application on the adapter's display and waits for its
   ## window, titled `title`, to be mapped; gives it the keyboard focus.
+  ## With `titleContains` the window's title need only contain `title` — for
+  ## an application that names its window after what it shows.
   ctx.ensureDisplay()
   var env = newStringTable(modeCaseSensitive)
   for k, v in ctx.env: env[k] = v
@@ -193,7 +196,9 @@ proc startApp*(ctx: GuiContext; argv: seq[string]; title: string; timeoutMs = 20
   while true:
     var found = false
     try:
-      for w in ctx.capture.windows("", WindowFilter(title: some(title))).windows:
+      let filter = if titleContains: WindowFilter(titleContains: some(title))
+                   else: WindowFilter(title: some(title))
+      for w in ctx.capture.windows("", filter).windows:
         if w.onScreen:
           ctx.window = w.bounds
           ctx.windowId = w.id
@@ -204,7 +209,8 @@ proc startApp*(ctx: GuiContext; argv: seq[string]; title: string; timeoutMs = 20
       raise backendError(beStage, argv[0] & " exited (status " & $ctx.app.peekExitCode &
         ") before its window appeared")
     if getMonoTime() > deadline:
-      raise backendError(beStage, "no window titled '" & title & "' within " & $timeoutMs & " ms")
+      raise backendError(beStage, "no window titled " & (if titleContains: "with " else: "") &
+        "'" & title & "' within " & $timeoutMs & " ms")
     sleep(50)
   try: discard ctx.input.focusWindow("", ctx.windowId)
   except gai.BackendError as e: raise gaFailure("focusing the window", e)
