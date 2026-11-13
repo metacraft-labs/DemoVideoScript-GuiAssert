@@ -1,4 +1,4 @@
 # Siblings cloned by setup-dev-env, each at an explicit commit: the adapter is
 # built and qualified against exactly these.
-DemoVideoScript=8e0e0ce8f5681e8b5bf402f01ff0fa744703f3af  # DemoVideoScript@agents: the conformance application's native-window build
-GuiAssert=e996cc69f14715163c21e37f5edbfcc7276d7d28  # GuiAssert@agents: gestures, and drags with modifiers held
+DemoVideoScript=1aeda49b14624931415893d981e74818bc82c34d  # DemoVideoScript@agents: a stage call's time limit, a passing run keeps its captures
+GuiAssert=5d925435f9f566f0f43ad0c89fef808cef7ad0cf  # GuiAssert@agents: a gesture can turn the wheel inside held keys
