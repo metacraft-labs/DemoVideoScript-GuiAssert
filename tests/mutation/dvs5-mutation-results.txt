@@ -1,45 +1,49 @@
-# dvs5 mutation results — 2026-11-12 10:42:03 +0200
+# dvs5 mutation results — 2026-11-13 12:43:56 +0200
 # kill command: just test
 
-KILLED   G1       85.6s  a click offset by a pixel band outside the role
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
+KILLED   G1      151.4s  a click offset by a pixel band outside the role
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G2       72.1s  an OCR read accepted below its confidence floor
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
+KILLED   G2      124.2s  an OCR read accepted below its confidence floor
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G3       87.3s  settled declared at the first unchanged capture, before the window stopped changing
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
+KILLED   G3       77.5s  settled declared at the first unchanged capture, before the window stopped changing
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-SURVIVED G4     1487.5s  settled after a quiet span shorter than the application's pauses
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 python3 ../DemoVideoScript/src/../tests/protocol_conformance.py $BUILD_DIR/bin/dvs-guiassert-notes ../DemoVideoScript/src
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 $BUILD_DIR/bin/dvs-guiassert-notes conformance --pack ../DemoVideoScript/src/../conformance/pack/notes-app.pack.yaml --ba
-KILLED   G5     1287.2s  a held modifier dropped
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 python3 ../DemoVideoScript/src/../tests/protocol_conformance.py $BUILD_DIR/bin/dvs-guiassert-notes ../DemoVideoScript/src
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 $BUILD_DIR/bin/dvs-guiassert-notes conformance --pack ../DemoVideoScript/src/../conformance/pack/notes-app.pack.yaml --ba
-           | error: Recipe `test-conformance` failed on line 40 with exit code 1
-KILLED   G6       99.9s  a stale read: the window is not read again after an input
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
+KILLED   G4      103.6s  settled after a quiet span shorter than the application's pauses
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G7       64.1s  a reversed (selected) row given to OCR without inverting it
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
+KILLED   G5      166.3s  a held modifier dropped
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G8      101.1s  a read answered from the screen before a pending press
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
+KILLED   G6       81.3s  a stale read: the window is not read again after an input
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G9     1913.8s  Shift delivered as Ctrl
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 python3 ../DemoVideoScript/src/../tests/protocol_conformance.py $BUILD_DIR/bin/dvs-guiassert-notes ../DemoVideoScript/src
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 $BUILD_DIR/bin/dvs-guiassert-notes conformance --pack ../DemoVideoScript/src/../conformance/pack/notes-app.pack.yaml --ba
-           | error: Recipe `test-conformance` failed on line 40 with exit code 1
-KILLED   G10     172.6s  a box's sides not recognised: no menu or dialog is found
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
+KILLED   G7      135.7s  a reversed (selected) row given to OCR without inverting it
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
+           | error: Recipe `test-adapter` failed on line 49 with exit code 1
+KILLED   G8      158.8s  a read answered from the screen before a pending press
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
+           | error: Recipe `test-adapter` failed on line 49 with exit code 1
+KILLED   G9      167.9s  Shift delivered as Ctrl
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
+           | error: Recipe `test-adapter` failed on line 49 with exit code 1
+KILLED   G10     142.4s  a box's sides not recognised: no menu or dialog is found
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
+           | error: Recipe `test-adapter` failed on line 49 with exit code 1
+KILLED   G11     187.3s  a wheel turned without the modifiers held
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
 
-9/10 killed, 1 survived
+11/11 killed, 0 survived
