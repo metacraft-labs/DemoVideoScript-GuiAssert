@@ -101,7 +101,7 @@ def main(name: str, root: Path, arms: list, kill: list):
             for cmd in a.pre:
                 subprocess.run(cmd, cwd=root, env=env, check=True, capture_output=True)
             t0 = time.time()
-            r = subprocess.run(kill, cwd=root, env=env, capture_output=True, text=True)
+            r = subprocess.run(kill, cwd=root, env=env, capture_output=True, text=True, errors="replace")
             dt = time.time() - t0
         finally:
             for f, text in saved.items():
