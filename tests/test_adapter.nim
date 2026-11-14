@@ -5,6 +5,7 @@
 ## a real OCR engine; no stand-ins.
 
 import std/[json, os, osproc, strutils, unittest, streams, monotimes, times]
+from std/posix import kill, SIGKILL, Pid
 import demo_video_script_guiassert
 
 let bin = getEnv("DVS_BIN_DIR", "build/bin")
@@ -14,11 +15,40 @@ let pack = dvsRoot / "conformance/pack/notes-app.pack.yaml"
 let scenarios = dvsRoot / "conformance/scenarios"
 let here = currentSourcePath().parentDir
 
-proc runRaw(exe: string; args: seq[string]): (string, int) =
-  let p = startProcess(exe, args = args, options = {poStdErrToStdOut})
-  let o = p.outputStream.readAll()
-  let code = p.waitForExit()
+const RunDeadlineMs = 15 * 60 * 1000
+  ## How long one run of a tool may take. A run that outlives it is killed
+  ## (its whole process group: the application and the Xvfb it started too)
+  ## and fails the test, rather than leaving it waiting forever.
+
+proc runRaw(exe: string; args: seq[string]; deadlineMs = RunDeadlineMs): (string, int) =
+  ## `exe` in a process group of its own, its output in a file — not a pipe,
+  ## which a surviving grandchild (the application) would hold open — waited
+  ## for until the deadline.
+  let outFile = getTempDir() / ("dga-run-" & $getCurrentProcessId() & "-" &
+                                $(getMonoTime().ticks mod 1_000_000_000) & ".out")
+  var cmd = "exec setsid " & quoteShell(exe)
+  for a in args: cmd.add " " & quoteShell(a)
+  cmd.add " > " & quoteShell(outFile) & " 2>&1 < /dev/null"
+  let p = startProcess("/bin/sh", args = ["-c", cmd], options = {})
+  let deadline = getMonoTime() + initDuration(milliseconds = deadlineMs)
+  var code = -1
+  while true:
+    code = p.peekExitCode
+    if code != -1: break
+    if getMonoTime() > deadline:
+      discard kill(-Pid(p.processID), SIGKILL)
+      discard p.waitForExit()
+      p.close()
+      let o = (try: readFile(outFile) except IOError: "")
+      removeFile(outFile)
+      raise newException(IOError, exe & " did not finish within " & $(deadlineMs div 1000) &
+                         " s and was killed with its process group; its output:\n" & o)
+    sleep(100)
+  # the group's other members (an application the tool left behind) go too
+  discard kill(-Pid(p.processID), SIGKILL)
   p.close()
+  let o = (try: readFile(outFile) except IOError: "")
+  removeFile(outFile)
   (o, code)
 
 proc runJson(scenario, backend: string; extra: seq[string] = @[]): JsonNode =
@@ -102,6 +132,37 @@ suite "the GuiAssert adapter":
     check not quietLongEnough(t, t + initDuration(milliseconds = 200))
     check not quietLongEnough(t, t + initDuration(milliseconds = 299))
     check quietLongEnough(t, t + initDuration(milliseconds = 300))
+
+  test "settled is the clock's quiet span after the last change, not one unchanged capture":
+    # The settle rule over a scripted window and a scripted clock — the one
+    # stand-in here, and why it is not a mock: the rule is a function of
+    # which captures were equal and when, and a real window on a loaded
+    # machine cannot be made to put two equal captures inside one pause on
+    # demand (the end-to-end slow-redraw case below can only sometimes). Each
+    # capture costs 20 ms of the clock; the window redraws once, at the third
+    # capture, after two equal ones.
+    var t = getMonoTime()
+    var grabs = 0
+    let frames = @["a", "a", "b"]
+    proc grab(): string =
+      t = t + initDuration(milliseconds = 20)
+      inc grabs
+      frames[min(grabs - 1, frames.high)]
+    let settled = settleOver(grab, proc (): MonoTime = t,
+                             proc (ms: int) = t = t + initDuration(milliseconds = ms), 5000)
+    check settled
+    # settled only once the frame after the redraw stayed for the whole span:
+    # 300 ms at a capture every 80 ms is four more captures after the third
+    check grabs >= 3 + 4
+    # and a window that never stops changing never settles
+    var n = 0
+    t = getMonoTime()
+    proc changing(): string =
+      inc n
+      t = t + initDuration(milliseconds = 20)
+      $n
+    check not settleOver(changing, proc (): MonoTime = t,
+                         proc (ms: int) = t = t + initDuration(milliseconds = ms), 1000)
 
   test "settled waits for the last of several redraw bursts":
     let slow = bin / "slow-redraw"

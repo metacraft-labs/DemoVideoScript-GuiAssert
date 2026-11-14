@@ -31,7 +31,7 @@ ARMS = [
     Arm("G5", A, "      if isPress: a.held.incl m.get else: a.held.excl m.get",
         "      discard m",
         "a held modifier dropped"),
-    Arm("G6", A, "  if a.hasFrame and f.image.pixels == a.frame.image.pixels: return",
+    Arm("G6", A, "  if a.hasFrame and not a.inputSince and f.image.pixels == a.frame.image.pixels: return",
         "  if a.hasFrame: return",
         "a stale read: the window is not read again after an input"),
     Arm("G7", B, "            ocrImg.pixels[(y0 + yy) * fw + x0 + xx] = char(if rev: 255 - v else: v)",

@@ -1,49 +1,49 @@
-# dvs5 mutation results — 2026-11-13 12:43:56 +0200
+# dvs5 mutation results — 2026-11-14 07:05:33 +0200
 # kill command: just test
 
-KILLED   G1      151.4s  a click offset by a pixel band outside the role
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+KILLED   G1       77.4s  a click offset by a pixel band outside the role
+           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G2      124.2s  an OCR read accepted below its confidence floor
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+KILLED   G2       84.7s  an OCR read accepted below its confidence floor
+           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G3       77.5s  settled declared at the first unchanged capture, before the window stopped changing
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+KILLED   G3       64.7s  settled declared at the first unchanged capture, before the window stopped changing
+           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G4      103.6s  settled after a quiet span shorter than the application's pauses
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+KILLED   G4       82.6s  settled after a quiet span shorter than the application's pauses
+           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G5      166.3s  a held modifier dropped
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+KILLED   G5       84.7s  a held modifier dropped
+           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G6       81.3s  a stale read: the window is not read again after an input
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+KILLED   G6       59.6s  a stale read: the window is not read again after an input
+           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G7      135.7s  a reversed (selected) row given to OCR without inverting it
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+KILLED   G7       60.4s  a reversed (selected) row given to OCR without inverting it
+           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G8      158.8s  a read answered from the screen before a pending press
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+KILLED   G8       81.6s  a read answered from the screen before a pending press
+           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G9      167.9s  Shift delivered as Ctrl
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+KILLED   G9       95.1s  Shift delivered as Ctrl
+           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G10     142.4s  a box's sides not recognised: no menu or dialog is found
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+KILLED   G10      89.8s  a box's sides not recognised: no menu or dialog is found
+           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G11     187.3s  a wheel turned without the modifiers held
-           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../fx-dvs/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --path:src --p
+KILLED   G11     184.5s  a wheel turned without the modifiers held
+           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
 
-11/11 killed, 0 survived
+11/11 killed, 0 survived or timed out
