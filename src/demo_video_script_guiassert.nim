@@ -72,6 +72,7 @@ type
     confidenceFloor*: float
       ## Words the OCR engine read with a lower confidence are not accepted.
     xvfb: Process
+    captureCfg: LinuxCaptureConfig
     capture: CaptureBackend
     input: InputBackend
     ocr: OcrEngine
@@ -102,6 +103,7 @@ type
     tree: Tree
     frame: Frame
     hasFrame: bool
+    inputSince: bool                 ## an input was sent since the surface was derived
     beforeSend: Tree
     hasBefore: bool
     stageClosed: bool
@@ -166,8 +168,8 @@ proc ensureDisplay(ctx: GuiContext) =
   else:
     ctx.startPrivateDisplay()
   let token = newCancelToken()
-  ctx.capture = newLinuxX11Capture(LinuxCaptureConfig(stateDir: ctx.workDir / "state",
-                                                      token: token, env: ctx.env))
+  ctx.captureCfg = LinuxCaptureConfig(stateDir: ctx.workDir / "state", token: token, env: ctx.env)
+  ctx.capture = newLinuxX11Capture(ctx.captureCfg)
   let capture = ctx.capture
   ctx.input = newLinuxXtestInput(LinuxInputConfig(
     stateDir: ctx.workDir / "state", token: token, env: ctx.env,
@@ -229,6 +231,31 @@ proc grab*(ctx: GuiContext): Frame =
     result.image = decodePngRgb(readFile(img.path))
   except gai.BackendError as e: raise gaFailure("capturing the window", e)
   except CatchableError as e: raise gaFailure("reading the capture", e)
+
+proc pointerShape*(ctx: GuiContext): string =
+  ## The shape of the pointer where it rests now (`default`, `pointer`,
+  ## `text`, `col-resize`, `row-resize`, `grab`, `grabbing`, `not-allowed`,
+  ## `wait`, `crosshair`; "" when the image says none of them). The X server
+  ## draws the pointer itself, so no frame shows it: this asks the server for
+  ## the cursor's image (GuiAssert's `x11PointerShape`, XFixes).
+  ctx.requireRunning()
+  try:
+    let img = x11PointerShape(ctx.captureCfg)
+    # the theme the application's cursors come from, when its environment
+    # names one (XCURSOR_THEME on XCURSOR_PATH): its cursor files say which
+    # shape an image is exactly
+    var themeCursors = ""
+    let theme = ctx.env.getOrDefault("XCURSOR_THEME", "")
+    if theme.len > 0:
+      for d in ctx.env.getOrDefault("XCURSOR_PATH", "").split(':'):
+        if themeCursors.len == 0 and d.len > 0 and dirExists(d / theme / "cursors"):
+          themeCursors = d / theme / "cursors"
+    result = pointerShapeOf(img, themeCursors)
+    if getEnv("DVS_GUIASSERT_POINTER_DEBUG").len > 0:
+      stderr.writeLine "pointer ", result, " name='", img.name, "' ", img.width, "x", img.height,
+        " hot ", img.xhot, ",", img.yhot
+      for row in img.mask: stderr.writeLine "  ", row
+  except gai.BackendError as e: raise gaFailure("reading the pointer's shape", e)
 
 proc recognize*(ctx: GuiContext; img: GrayImage; psm = 6): seq[Word] =
   ## The words the OCR engine reads in `img` (dark text on a light ground),
@@ -293,29 +320,38 @@ proc quietLongEnough*(quietSince, sampled: MonoTime): bool =
   ## redraws that is shorter than that is not the end of its redraw.
   (sampled - quietSince).inMilliseconds >= QuietSpanMs
 
-proc settle(a: Adapter; timeoutMs = 5000): bool =
-  ## The window stopped changing: captures `QuietIntervalMs` apart were all
-  ## equal over at least `QuietSpanMs`, from the end of the first capture to
-  ## the start of the last. Measured by the clock, not by a count of captures,
-  ## because a capture's own duration varies with the machine's load.
-  let deadline = getMonoTime() + initDuration(milliseconds = timeoutMs)
-  var last = a.ctx.grab()
-  var quietSince = getMonoTime()
-  while getMonoTime() < deadline:
-    sleep(QuietIntervalMs)
-    let started = getMonoTime()
-    let next = a.ctx.grab()
-    if next.image.pixels == last.image.pixels:
+proc settleOver*(grab: proc (): string; now: proc (): MonoTime; pause: proc (ms: int);
+                 timeoutMs: int): bool =
+  ## The settle rule over any frame source and clock: captures
+  ## `QuietIntervalMs` apart were all equal over at least `QuietSpanMs`, from
+  ## the end of the first capture to the start of the last. Measured by the
+  ## clock, not by a count of captures, because a capture's own duration
+  ## varies with the machine's load.
+  let deadline = now() + initDuration(milliseconds = timeoutMs)
+  var last = grab()
+  var quietSince = now()
+  while now() < deadline:
+    pause(QuietIntervalMs)
+    let started = now()
+    let next = grab()
+    if next == last:
       if quietLongEnough(quietSince, started): return true
     else:
-      quietSince = getMonoTime()
+      quietSince = now()
     last = next
   false
+
+proc settle(a: Adapter; timeoutMs = 5000): bool =
+  ## The window stopped changing (`settleOver`, on the window's captures and
+  ## the real clock).
+  settleOver(proc (): string = a.ctx.grab().image.pixels, getMonoTime,
+             proc (ms: int) = sleep(ms), timeoutMs)
 
 proc refresh(a: Adapter) =
   a.ctx.requireRunning()
   let f = a.ctx.grab()
-  if a.hasFrame and f.image.pixels == a.frame.image.pixels: return
+  if a.hasFrame and not a.inputSince and f.image.pixels == a.frame.image.pixels: return
+  a.inputSince = false
   a.frame = f
   a.hasFrame = true
   a.tree = a.b.surface(a.ctx, f)
@@ -544,6 +580,11 @@ proc sendAction(a: Adapter; act: JsonNode) =
   else:
     raise backendError(beProtocol, "send: no input action in " & $act)
   a.idx.clear()
+  # an input can change what the pixels do not show (the pointer's shape
+  # under a hover): the next read derives the surface afresh, even from an
+  # unchanged frame (the OCR engine's results are kept per image, so that
+  # costs no second reading of the text)
+  a.inputSince = true
 
 # --- the backend -------------------------------------------------------------------------
 
@@ -553,6 +594,19 @@ const Capabilities = ["input.key", "input.chord", "input.text", "input.pointer.m
                       "record.video", "record.still"]
   ## What vision can do. Not `observe.style` (the adapter reads text and where
   ## it is, not how it is styled) and not `observe.image`.
+
+proc newOfflineContext*(workDir: string): GuiContext =
+  ## A context with the OCR engine and no application: for reading saved
+  ## frames (a run's stills) with a binding's `surface`, to see what it
+  ## derives from them. Nothing that needs the application (a grab, input,
+  ## the pointer) works on it.
+  createDir(workDir)
+  GuiContext(workDir: workDir, state: newJObject(), confidenceFloor: DefaultConfidenceFloor,
+             ocr: newTesseractOcr())
+
+proc frameOf*(png: string): Frame =
+  ## A saved PNG as a frame.
+  Frame(image: decodePngRgb(readFile(png)))
 
 proc newGuiAssertBackend*(binding: GuiBinding; defect = gdNone;
                           confidenceFloor = DefaultConfidenceFloor): Backend =

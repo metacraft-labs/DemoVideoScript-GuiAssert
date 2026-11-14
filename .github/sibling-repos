@@ -1,4 +1,4 @@
 # Siblings cloned by setup-dev-env, each at an explicit commit: the adapter is
 # built and qualified against exactly these.
 DemoVideoScript=1aeda49b14624931415893d981e74818bc82c34d  # DemoVideoScript@agents: a stage call's time limit, a passing run keeps its captures
-GuiAssert=5d925435f9f566f0f43ad0c89fef808cef7ad0cf  # GuiAssert@agents: a gesture can turn the wheel inside held keys
+GuiAssert=a07e12ad69f40f40c6543cb82b4f1ee69cdf3bd3  # GuiAssert@agents: the pointer's shape read from the X server
