@@ -119,6 +119,8 @@ const
     ## The interval between the captures `settled` compares.
   QuietSpanMs = 300
     ## How long the window must stay unchanged to be settled.
+  OcrCacheSize = 2048
+    ## How many regions' OCR results are kept (each keyed by its pixels).
   ScreenSize = "2048x1536x24"
 
 proc refuse(msg: string): ref BackendError = backendError(beRefused, msg)
@@ -221,16 +223,49 @@ proc requireRunning(ctx: GuiContext) =
   if not ctx.running:
     raise backendError(beInternal, "the application is not running (no stage started it)")
 
+type Profile* = object
+  ## Where a run's time goes (`DVS_GUIASSERT_PROFILE`): the captures, the
+  ## OCR engine's reads (and the ones its results were kept for), the
+  ## binding's surface derivations, and each backend operation.
+  grabs*, ocrCalls*, ocrHits*, surfaces*: int
+  settleChanges*: int
+    ## captures a settle found different from the one before
+  settleRows*: (int, int)
+    ## the rows the last of those differed in (first, last)
+  grabMs*, ocrMs*, surfaceMs*: float
+
+var profile*: Profile
+let profilePath = getEnv("DVS_GUIASSERT_PROFILE")
+
+proc msSince(t: MonoTime): float = float((getMonoTime() - t).inMicroseconds) / 1000.0
+
+proc profileLine(op: string; ms: float; before: Profile) =
+  ## One line of the profile: the operation, its time, and what it cost in
+  ## captures, OCR reads and surface derivations.
+  if profilePath.len == 0: return
+  let f = open(profilePath, fmAppend)
+  defer: f.close()
+  f.writeLine $(%*{"op": op, "ms": ms,
+    "grabs": profile.grabs - before.grabs, "grabMs": profile.grabMs - before.grabMs,
+    "ocr": profile.ocrCalls - before.ocrCalls, "ocrHits": profile.ocrHits - before.ocrHits,
+    "ocrMs": profile.ocrMs - before.ocrMs,
+    "surfaces": profile.surfaces - before.surfaces, "surfaceMs": profile.surfaceMs - before.surfaceMs,
+    "settleChanges": profile.settleChanges - before.settleChanges,
+    "settleRows": [profile.settleRows[0], profile.settleRows[1]]})
+
 proc grab*(ctx: GuiContext): Frame =
-  ## The application's window as it is on screen now.
+  ## The application's window as it is on screen now: its pixels read
+  ## straight from the X server (GuiAssert's `x11GrabRgb`), no window listing
+  ## and no PNG file between, since a settle or a wait grabs many times a
+  ## second.
   ctx.requireRunning()
-  let path = ctx.workDir / "frame.png"
+  let t0 = getMonoTime()
   try:
-    let img = ctx.capture.capture(CaptureRequest(
-      target: CaptureTarget(kind: ctkRegion, region: ctx.window), outPath: path))
-    result.image = decodePngRgb(readFile(img.path))
+    result.image = x11GrabRgb(ctx.captureCfg, ctx.window)
   except gai.BackendError as e: raise gaFailure("capturing the window", e)
   except CatchableError as e: raise gaFailure("reading the capture", e)
+  inc profile.grabs
+  profile.grabMs += msSince(t0)
 
 proc pointerShape*(ctx: GuiContext): string =
   ## The shape of the pointer where it rests now (`default`, `pointer`,
@@ -263,7 +298,13 @@ proc recognize*(ctx: GuiContext; img: GrayImage; psm = 6): seq[Word] =
   ## block, 7 a single line). Results are kept per image, so an unchanged
   ## frame is not read twice.
   let h = hash(img.pixels) !& psm
-  if ctx.ocrCache.hasKey(h) and ctx.ocrCache[h][0] == img.pixels: return ctx.ocrCache[h][1]
+  if ctx.ocrCache.hasKey(h) and ctx.ocrCache[h][0] == img.pixels:
+    inc profile.ocrHits
+    return ctx.ocrCache[h][1]
+  let t0 = getMonoTime()
+  defer:
+    inc profile.ocrCalls
+    profile.ocrMs += msSince(t0)
   let path = ctx.workDir / "ocr.png"
   writeFile(path, encodePng(img))
   try:
@@ -272,7 +313,9 @@ proc recognize*(ctx: GuiContext; img: GrayImage; psm = 6): seq[Word] =
       result.add Word(text: w.text, confidence: w.confidence, x: w.bbox[0], y: w.bbox[1],
                       w: w.bbox[2], h: w.bbox[3])
   except gai.BackendError as e: raise gaFailure("recognising text", e)
-  if ctx.ocrCache.len > 64: ctx.ocrCache.clear()
+  # a surface reads tens of regions; a cache smaller than a few surfaces'
+  # worth was cleared within one wait, and every poll read them all again
+  if ctx.ocrCache.len > OcrCacheSize: ctx.ocrCache.clear()
   ctx.ocrCache[h] = (img.pixels, result)
 
 proc luma*(f: Frame; x, y: int): int =
@@ -344,8 +387,21 @@ proc settleOver*(grab: proc (): string; now: proc (): MonoTime; pause: proc (ms:
 proc settle(a: Adapter; timeoutMs = 5000): bool =
   ## The window stopped changing (`settleOver`, on the window's captures and
   ## the real clock).
-  settleOver(proc (): string = a.ctx.grab().image.pixels, getMonoTime,
-             proc (ms: int) = sleep(ms), timeoutMs)
+  var last = ""
+  let width = max(1, a.ctx.window.width) * 3
+  proc grabNoting(): string =
+    result = a.ctx.grab().image.pixels
+    if profilePath.len > 0 and last.len > 0 and result != last:
+      inc profile.settleChanges
+      var first = -1
+      var final = -1
+      for i in 0 ..< min(result.len, last.len):
+        if result[i] != last[i]:
+          if first < 0: first = i
+          final = i
+      profile.settleRows = (first div width, final div width)
+    last = result
+  settleOver(grabNoting, getMonoTime, proc (ms: int) = sleep(ms), timeoutMs)
 
 proc refresh(a: Adapter) =
   a.ctx.requireRunning()
@@ -354,7 +410,10 @@ proc refresh(a: Adapter) =
   a.inputSince = false
   a.frame = f
   a.hasFrame = true
+  let t0 = getMonoTime()
   a.tree = a.b.surface(a.ctx, f)
+  inc profile.surfaces
+  profile.surfaceMs += msSince(t0)
 
 proc requireNothingPending(a: Adapter; what: string) =
   if a.pending.on:
@@ -627,18 +686,30 @@ proc newGuiAssertBackend*(binding: GuiBinding; defect = gdNone;
     if a.stageClosed:
       raise backendError(beStageClosed, "the stage has ended; '" & use & "' cannot run now")
     a.ctx.base = args{"$base"}.getStr(".")
+    let t0 = getMonoTime()
+    let before = profile
+    defer: profileLine("stage " & use, msSince(t0), before)
     try: binding.stage(a.ctx, use, args)
     except BackendError: raise
     except CatchableError as e: raise backendError(beStage, use & ": " & e.msg)
   result.endStage = proc () =
+    let t0 = getMonoTime()
+    let before = profile
+    defer: profileLine("end-stage (launch settled)", msSince(t0), before)
     a.stageClosed = true
     if a.ctx.running: discard a.settle()
   result.resolveChord = proc (operation: string): Option[string] =
     if binding.resolveChord == nil: none(string) else: binding.resolveChord(a.ctx, operation)
   result.locate = proc (locator: JsonNode): LocateResult =
+    let t0 = getMonoTime()
+    let before = profile
+    defer: profileLine("locate", msSince(t0), before)
     if not a.pending.on: a.refresh()
     a.idx.locate(a.tree, locator)
   result.read = proc (instance: string; properties: seq[string]): JsonNode =
+    let t0 = getMonoTime()
+    let before = profile
+    defer: profileLine("read", msSince(t0), before)
     a.requireNothingPending("read")
     let t = a.treeForRead()
     let n = a.idx.lookup(t, instance)
@@ -648,8 +719,19 @@ proc newGuiAssertBackend*(binding: GuiBinding; defect = gdNone;
       let p = point(a.ctx.window.x + int(n.x) + 3, a.ctx.window.y + int(n.y + n.h / 2))
       a.deliver("clicking", proc () = discard a.ctx.input.click("", p, gai.mbLeft, 1, @["ctrl"]))
       discard a.settle(1000)
-  result.send = proc (action: JsonNode) = a.sendAction(action)
+  result.send = proc (action: JsonNode) =
+    let t0 = getMonoTime()
+    let before = profile
+    defer:
+      var kind = ""
+      for k, _ in action:
+        if k notin ["targets", "timing"]: kind = k
+      profileLine("send " & kind, msSince(t0), before)
+    a.sendAction(action)
   result.await = proc (condition, instance: string; timeoutMs: int): bool =
+    let t0 = getMonoTime()
+    let before = profile
+    defer: profileLine("await " & condition, msSince(t0), before)
     a.ctx.requireRunning()
     if a.defect == gdEarlySync: return true
     if a.pending.on:

@@ -27,7 +27,12 @@ What it does:
   one gesture, when the release comes; a read between the two is refused. The wheel
   turned while a modifier is held (Shift+wheel) is one gesture too, with the keys down.
 - **Settled** is a window that stopped changing: captures 60 ms apart, all equal over at
-  least 300 ms of the clock.
+  least 300 ms of the clock, measured between the captures' own clock readings, so a
+  slow capture on a loaded machine lengthens the span rather than defeating it.
+- **Profile**: with `DVS_GUIASSERT_PROFILE=<file>`, each backend operation appends one
+  JSON line: its time, and what it spent on captures, OCR reads (and cache hits) and the
+  binding's surface derivation; a settle also notes how many captures changed and in
+  which rows. It is how a slow run is taken apart.
 - **Recordings**: a video of the window (GuiAssert's recorder and `ffmpeg`) and a PNG
   still per step. A `capture` step's still is the scenario's output, not part of the
   recording: the runner keeps it from a passing run whatever `--record` says.

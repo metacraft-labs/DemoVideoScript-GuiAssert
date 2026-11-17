@@ -1,48 +1,48 @@
-# dvs5 mutation results — 2026-11-14 07:05:33 +0200
+# dvs5 mutation results — 2026-11-17 08:52:39 +0200
 # kill command: just test
 
-KILLED   G1       77.4s  a click offset by a pixel band outside the role
-           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+KILLED   G1      311.3s  a click offset by a pixel band outside the role
+           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G2       84.7s  an OCR read accepted below its confidence floor
-           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+KILLED   G2      277.5s  an OCR read accepted below its confidence floor
+           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G3       64.7s  settled declared at the first unchanged capture, before the window stopped changing
-           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+KILLED   G3      153.3s  settled declared at the first unchanged capture, before the window stopped changing
+           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G4       82.6s  settled after a quiet span shorter than the application's pauses
-           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+KILLED   G4      187.0s  settled after a quiet span shorter than the application's pauses
+           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G5       84.7s  a held modifier dropped
-           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+KILLED   G5      185.5s  a held modifier dropped
+           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G6       59.6s  a stale read: the window is not read again after an input
-           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+KILLED   G6      166.7s  a stale read: the window is not read again after an input
+           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G7       60.4s  a reversed (selected) row given to OCR without inverting it
-           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+KILLED   G7      330.2s  a reversed (selected) row given to OCR without inverting it
+           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G8       81.6s  a read answered from the screen before a pending press
-           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+KILLED   G8      343.1s  a read answered from the screen before a pending press
+           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G9       95.1s  Shift delivered as Ctrl
-           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+KILLED   G9      282.0s  Shift delivered as Ctrl
+           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G10      89.8s  a box's sides not recognised: no menu or dialog is found
-           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+KILLED   G10     252.5s  a box's sides not recognised: no menu or dialog is found
+           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G11     184.5s  a wheel turned without the modifiers held
-           | ../DemoVideoScript-GuiAssert/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+KILLED   G11     216.4s  a wheel turned without the modifiers held
+           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
            | error: Recipe `test-adapter` failed on line 49 with exit code 1
 

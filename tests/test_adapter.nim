@@ -164,6 +164,25 @@ suite "the GuiAssert adapter":
     check not settleOver(changing, proc (): MonoTime = t,
                          proc (ms: int) = t = t + initDuration(milliseconds = ms), 1000)
 
+  test "a still window settles however slow its captures are":
+    # A loaded machine (a CI runner, a software-rendered window) can take
+    # seconds per capture. The quiet span is measured between the captures'
+    # own clock readings, so slow captures of an unchanged window make the
+    # span longer, never shorter: two equal captures settle it, even when
+    # each one takes a large share of the timeout.
+    for costMs in [20, 400, 2_000, 12_000]:
+      var t = getMonoTime()
+      var grabs = 0
+      proc slow(): string =
+        t = t + initDuration(milliseconds = costMs)
+        inc grabs
+        "still"
+      check settleOver(slow, proc (): MonoTime = t,
+                       proc (ms: int) = t = t + initDuration(milliseconds = ms), 30_000)
+      checkpoint "a capture costing " & $costMs & " ms took " & $grabs & " captures"
+      # the first capture, then enough to span 300 ms, then the one that sees it
+      check grabs <= 2 + (300 + costMs + 59) div (costMs + 60)
+
   test "settled waits for the last of several redraw bursts":
     let slow = bin / "slow-redraw"
     for i in 1 .. 3:
