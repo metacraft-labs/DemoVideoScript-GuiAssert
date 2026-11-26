@@ -1,0 +1,9 @@
+scenario: 1
+name: guiassert/flash
+pack: restless
+stage:
+  - use: launch-flash
+steps:
+  - expect: { at: screen, flashed: false }
+  - key: x
+  - expect: { at: screen, flashed: true }

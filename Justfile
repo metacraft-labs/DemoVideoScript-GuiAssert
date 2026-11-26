@@ -21,14 +21,16 @@ scenarios := dvs_root / "conformance/scenarios"
 
 # The adapter with the conformance binding (`dvs-guiassert-notes`), the
 # conformance application's native-window build (`notes-x11`) from the pinned
-# DemoVideoScript, and the slow-redraw check. The tests never build these.
+# DemoVideoScript, the slow-redraw check and the restless applications. The
+# tests never build these.
 build:
     @mkdir -p {{bin}}
     nim c {{nim_flags}} -d:release {{paths}} --nimcache:{{build_dir}}/nimcache/dga -o:{{bin}}/dvs-guiassert-notes conformance/dvs_guiassert_notes.nim
     nim c {{nim_flags}} -d:release --nimcache:{{build_dir}}/nimcache/notes-x11 -o:{{bin}}/notes-x11 {{dvs_root}}/conformance/app/notes_x11.nim
     nim c {{nim_flags}} -d:release {{paths}} --nimcache:{{build_dir}}/nimcache/slow-redraw -o:{{bin}}/slow-redraw tests/support/slow_redraw.nim
+    nim c {{nim_flags}} -d:release {{paths}} --nimcache:{{build_dir}}/nimcache/restless -o:{{bin}}/restless tests/support/restless.nim
 
-test: build test-adapter test-protocol test-conformance
+test: build test-adapter test-restless test-protocol test-conformance
 
 # §12: every admitted scenario passes in fast and realistic modes, every
 # other is unsupported, and every planted defect turns a scenario red.
@@ -48,6 +50,12 @@ test-adapter:
     DVS_NOTES_X11={{bin}}/notes-x11 DVS_BIN_DIR={{bin}} DVS_ROOT={{dvs_root}} \
       nim c -r {{nim_flags}} {{paths}} --nimcache:{{build_dir}}/nimcache/test_adapter -o:{{build_dir}}/test-bin/test_adapter tests/test_adapter.nim
 
+# Windows that never stop changing: a binding's own `settled`, and the sampler.
+test-restless:
+    @mkdir -p {{build_dir}}/test-bin
+    DVS_BIN_DIR={{bin}} \
+      nim c -r {{nim_flags}} {{paths}} --nimcache:{{build_dir}}/nimcache/test_restless -o:{{build_dir}}/test-bin/test_restless tests/test_restless.nim
+
 # Prints what the vision binding reads, frame by frame (a diagnostic).
 grid-dump fixture cols="60" rows="16" *steps:
     nim c {{nim_flags}} -d:release {{paths}} --nimcache:{{build_dir}}/nimcache/grid-dump -o:{{bin}}/grid-dump tests/support/grid_dump.nim
@@ -59,6 +67,8 @@ lint-nim:
     nim check {{nim_flags}} {{paths}} conformance/dvs_guiassert_notes.nim
     nim check {{nim_flags}} {{paths}} tests/test_adapter.nim
     nim check {{nim_flags}} {{paths}} tests/support/slow_redraw.nim
+    nim check {{nim_flags}} {{paths}} tests/test_restless.nim
+    nim check {{nim_flags}} {{paths}} tests/support/restless.nim
 
 lint-neutrality:
     bash {{dvs_root}}/tests/neutrality_scan.sh $(git ls-files | grep -vE '^(flake.lock)$' | sed "s|^|$PWD/|")

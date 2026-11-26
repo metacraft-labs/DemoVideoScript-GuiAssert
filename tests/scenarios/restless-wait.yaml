@@ -1,0 +1,9 @@
+scenario: 1
+name: guiassert/restless-wait
+pack: restless
+stage:
+  - use: launch-animate
+steps:
+  - { key: x, settle: false }
+  - wait: { until: settled, timeout: 3s }
+  - expect: { at: screen, keys: 1 }

@@ -1,0 +1,9 @@
+pack: 1
+name: restless
+root: screen
+roles:
+  screen:
+    properties: { keys: int, flashed: bool }
+stages:
+  launch-animate: ~
+  launch-flash: ~

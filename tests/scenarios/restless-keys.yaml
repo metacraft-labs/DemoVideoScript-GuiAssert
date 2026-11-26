@@ -1,0 +1,10 @@
+scenario: 1
+name: guiassert/restless-keys
+pack: restless
+stage:
+  - use: launch-animate
+steps:
+  - key: x
+  - expect: { at: screen, keys: 1 }
+  - key: y
+  - expect: { at: screen, keys: 2 }
