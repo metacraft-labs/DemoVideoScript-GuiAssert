@@ -1,49 +1,49 @@
-# dvs5 mutation results — 2026-11-17 08:52:39 +0200
+# dvs5 mutation results — 2026-11-26 04:23:51 +0200
 # kill command: just test
 
-KILLED   G1      311.3s  a click offset by a pixel band outside the role
-           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+KILLED   G1      224.3s  a click offset by a pixel band outside the role
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
-           | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G2      277.5s  an OCR read accepted below its confidence floor
-           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+           | error: Recipe `test-adapter` failed on line 51 with exit code 1
+KILLED   G2      186.3s  an OCR read accepted below its confidence floor
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
-           | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G3      153.3s  settled declared at the first unchanged capture, before the window stopped changing
-           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+           | error: Recipe `test-adapter` failed on line 51 with exit code 1
+KILLED   G3      237.9s  settled declared at the first unchanged capture, before the window stopped changing
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
-           | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G4      187.0s  settled after a quiet span shorter than the application's pauses
-           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+           | error: Recipe `test-adapter` failed on line 51 with exit code 1
+KILLED   G4      123.4s  settled after a quiet span shorter than the application's pauses
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
-           | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G5      185.5s  a held modifier dropped
-           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+           | error: Recipe `test-adapter` failed on line 51 with exit code 1
+KILLED   G5      148.5s  a held modifier dropped
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
-           | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G6      166.7s  a stale read: the window is not read again after an input
-           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+           | error: Recipe `test-adapter` failed on line 51 with exit code 1
+KILLED   G6      109.6s  a stale read: the window is not read again after an input
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
-           | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G7      330.2s  a reversed (selected) row given to OCR without inverting it
-           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+           | error: Recipe `test-adapter` failed on line 51 with exit code 1
+KILLED   G7      107.4s  a reversed (selected) row given to OCR without inverting it
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
-           | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G8      343.1s  a read answered from the screen before a pending press
-           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+           | error: Recipe `test-adapter` failed on line 51 with exit code 1
+KILLED   G8      230.3s  a read answered from the screen before a pending press
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
-           | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G9      282.0s  Shift delivered as Ctrl
-           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+           | error: Recipe `test-adapter` failed on line 51 with exit code 1
+KILLED   G9      373.8s  Shift delivered as Ctrl
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
-           | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G10     252.5s  a box's sides not recognised: no menu or dialog is found
-           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+           | error: Recipe `test-adapter` failed on line 51 with exit code 1
+KILLED   G10     437.6s  a box's sides not recognised: no menu or dialog is found
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
-           | error: Recipe `test-adapter` failed on line 49 with exit code 1
-KILLED   G11     216.4s  a wheel turned without the modifiers held
-           | ../dvsga-grade/tests/test_adapter.nim(7, 51) Warning: imported and not used: 'streams' [UnusedImport]
+           | error: Recipe `test-adapter` failed on line 51 with exit code 1
+KILLED   G11     394.2s  a wheel turned without the modifiers held
+           | DVS_NOTES_X11=$BUILD_DIR/bin/notes-x11 DVS_BIN_DIR=$BUILD_DIR/bin DVS_ROOT=../DemoVideoScript/src/.. nim c -r --hints:off --passC:-w --mm:orc --threads:on --pat
            | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_adapter'
-           | error: Recipe `test-adapter` failed on line 49 with exit code 1
+           | error: Recipe `test-adapter` failed on line 51 with exit code 1
 
 11/11 killed, 0 survived or timed out

@@ -1,0 +1,21 @@
+# dvs15 mutation results — 2026-11-26 04:12:08 +0200
+# kill command: just build test-restless
+
+KILLED   S1      231.4s  the binding's settled ignored: every window must stop changing to settle
+           | ../DemoVideoScript-GuiAssert/tests/support/restless.nim(34, 32) Warning: imported and not used: 'tables' [UnusedImport]
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_restless'
+           | error: Recipe `test-restless` failed on line 57 with exit code 1
+KILLED   S2      201.0s  the sampler drops the frame between two reads (its ring keeps only the newest)
+           | ../DemoVideoScript-GuiAssert/tests/support/restless.nim(34, 32) Warning: imported and not used: 'tables' [UnusedImport]
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_restless'
+           | error: Recipe `test-restless` failed on line 57 with exit code 1
+KILLED   S3      139.1s  the sampler outlives its stage: close leaves it grabbing
+           | Error: unhandled exception: over- or underflow [OverflowDefect]
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_restless'
+           | error: Recipe `test-restless` failed on line 57 with exit code 1
+KILLED   S4      119.0s  a served adapter's application writes into the protocol stream
+           | ../DemoVideoScript-GuiAssert/tests/support/restless.nim(34, 32) Warning: imported and not used: 'tables' [UnusedImport]
+           | Error: execution of an external program failed: '$BUILD_DIR/test-bin/test_restless'
+           | error: Recipe `test-restless` failed on line 57 with exit code 1
+
+4/4 killed, 0 survived or timed out
