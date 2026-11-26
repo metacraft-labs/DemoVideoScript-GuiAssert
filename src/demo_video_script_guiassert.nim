@@ -21,8 +21,20 @@
 ## and delivers a scenario's pointer `press` … `release` as one gesture when
 ## the release comes. Between the two nothing has been delivered yet: the
 ## screen is what it was before the press, and a read there is refused.
+##
+## A window that never stops changing (a game, a video, an animation) is not
+## served by the default meaning of `settled`, "the window stopped changing":
+## a binding may give its own rule (`GuiBinding.settled`; the library's are
+## `windowStill`, the default, and `framesPresented`). And a property of the
+## frames between two reads (the frame that flashed) is not in any frame a read
+## grabs: a binding may ask the adapter for a sampler (`startSampler`), which
+## grabs frames at a declared rate into a bounded ring, between reads and
+## during them, for the binding's observations to read with `framesSince`. The
+## sampler runs from the call that asks for it until the stage's application is
+## torn down (`close`), or until the binding stops it.
 
-import std/[json, os, osproc, strutils, strtabs, tables, times, monotimes, options, hashes]
+import std/[json, os, osproc, strutils, strtabs, tables, times, monotimes, options, hashes,
+             locks, atomics]
 from std/unicode import runes, `$`
 from std/posix import Stat, stat
 import gui_assert/core/[geometry, png, image, ocr_types]
@@ -49,8 +61,11 @@ type
     gdEarlySync = "early-sync", gdReadSideEffect = "read-side-effect"
 
   Frame* = object
-    ## One capture of the application's window: its pixels, 8-bit RGB.
+    ## One capture of the application's window: its pixels, 8-bit RGB, and
+    ## the clock it was grabbed at (when the grab started: a frame grabbed at
+    ## or after an instant shows the window as it was at or after it).
     image*: RgbImage
+    at*: MonoTime
 
   Word* = object
     ## A word the OCR engine read, in the frame's pixels.
@@ -77,6 +92,59 @@ type
     input: InputBackend
     ocr: OcrEngine
     ocrCache: Table[Hash, (string, seq[Word])]
+    lastInputAt*: MonoTime
+      ## When the last input action was delivered (its end); the zero
+      ## instant before the first.
+    sampler: Sampler
+    samplerLast: SamplerStats        ## the stopped sampler's last counts
+
+  FrameSource* = object
+    ## The frames a `settled` rule judges, in the order they were grabbed,
+    ## from the instant the settle starts at (`since`: the last input, when one
+    ## was sent since the previous settle, else the settle's start). With a
+    ## sampler running, `next` gives the sampler's frames grabbed after the
+    ## one it gave last (waiting for the next when there is none yet);
+    ## without, a grab now.
+    since*: MonoTime
+    next*: proc (): Frame {.closure.}
+
+  SettledRule* = proc (ctx: GuiContext; frames: FrameSource; timeoutMs: int): bool {.closure.}
+    ## A binding's meaning of `settled`: true once it holds, false when it did
+    ## not within `timeoutMs`.
+
+  SamplerStats* = object
+    ## What a sampler holds and has done.
+    running*: bool
+    rateHz*: float
+    maxFrames*, maxAgeMs*: int        ## the ring's bounds
+    grabs*: int                       ## grabs started
+    failures*: int                    ## grabs that failed (the last one's message in `lastError`)
+    held*: int                        ## frames in the ring now
+    oldestAgeMs*, newestAgeMs*: float ## their ages now (0 when none)
+    lastError*: string
+
+  SamplerShared = object
+    ## The ring and the counters the sampling thread and the adapter share.
+    lock: Lock
+    frames: seq[Frame]               ## oldest first; guarded by `lock`
+    lastError: string                ## guarded by `lock`
+    stop: Atomic[bool]
+    grabs, failures: Atomic[int]
+    maxFrames, maxAgeMs: int
+
+  SamplerArgs = object
+    shared: ptr SamplerShared
+    token: CancelToken
+    stateDir: string
+    env: seq[(string, string)]
+    rect: geometry.Rect
+    intervalMs: float
+
+  Sampler = ref object
+    shared: ptr SamplerShared
+    token: CancelToken
+    thread: Thread[SamplerArgs]
+    rateHz: float
 
   GuiBinding* = ref object
     name*: string
@@ -89,6 +157,10 @@ type
     resolveChord*: proc (ctx: GuiContext; operation: string): Option[string] {.closure.}
     anchor*: proc (ctx: GuiContext; n: SurfaceNode; anchor: string): Option[(int, int)] {.closure.}
       ## A named point of an instance, in window pixels.
+    settled*: SettledRule
+      ## What `settled` means for this application (the `wait: settled`
+      ## condition and the settle after every input); nil is `windowStill`'s
+      ## meaning, the window stopped changing.
 
   Pending = object
     ## A pointer press not yet delivered: the gesture it starts.
@@ -109,6 +181,7 @@ type
     stageClosed: bool
     held: set[Modifier]
     pending: Pending
+    lastSettleAt: MonoTime
     defect: GuiDefect
     recId: string
     recPath: string
@@ -260,6 +333,7 @@ proc grab*(ctx: GuiContext): Frame =
   ## second.
   ctx.requireRunning()
   let t0 = getMonoTime()
+  result.at = t0
   try:
     result.image = x11GrabRgb(ctx.captureCfg, ctx.window)
   except gai.BackendError as e: raise gaFailure("capturing the window", e)
@@ -402,6 +476,194 @@ proc settle(a: Adapter; timeoutMs = 5000): bool =
       profile.settleRows = (first div width, final div width)
     last = result
   settleOver(grabNoting, getMonoTime, proc (ms: int) = sleep(ms), timeoutMs)
+
+# --- continuous sampling ----------------------------------------------------------------
+
+proc ageMs(t, now: MonoTime): float = float((now - t).inMicroseconds) / 1000.0
+
+proc prune(s: ptr SamplerShared; now: MonoTime) =
+  ## The ring within its bounds: at most `maxFrames` frames, none older than
+  ## `maxAgeMs`. The caller holds the lock.
+  while s.frames.len > s.maxFrames: s.frames.delete(0)
+  while s.frames.len > 0 and ageMs(s.frames[0].at, now) > float(s.maxAgeMs): s.frames.delete(0)
+
+proc samplerLoop(args: SamplerArgs) {.thread.} =
+  ## The sampling thread: a grab every `intervalMs` (no burst to catch up
+  ## after a slow one), each frame stamped with the clock its grab started
+  ## at, until asked to stop. It has a capture configuration of its own (its
+  ## own state directory, so its grabs' files never meet the adapter's) and
+  ## touches nothing of the adapter's but the shared ring.
+  {.cast(gcsafe).}:
+    let s = args.shared
+    var env = initTable[string, string]()
+    for (k, v) in args.env: env[k] = v
+    let cfg = LinuxCaptureConfig(stateDir: args.stateDir, token: args.token, env: env)
+    var due = getMonoTime()
+    while not s.stop.load:
+      let t0 = getMonoTime()
+      discard s.grabs.fetchAdd(1)
+      try:
+        let img = x11GrabRgb(cfg, args.rect)
+        withLock s.lock:
+          s.frames.add Frame(image: img, at: t0)
+          prune(s, getMonoTime())
+      except CatchableError as e:
+        if not s.stop.load:
+          discard s.failures.fetchAdd(1)
+          withLock s.lock: s.lastError = e.msg
+      due = due + initDuration(microseconds = int(args.intervalMs * 1000))
+      let now = getMonoTime()
+      if due < now: due = now
+      while not s.stop.load and getMonoTime() < due:
+        sleep(max(1, min(5, int((due - getMonoTime()).inMilliseconds))))
+
+proc sampling*(ctx: GuiContext): bool =
+  ## Whether a sampler is running.
+  ctx.sampler != nil
+
+proc stopSampler*(ctx: GuiContext) =
+  ## Stops the sampler (a grab in flight is cancelled) and drops its frames;
+  ## nothing when none runs. Its last counts stay in `samplerStats`.
+  let sm = ctx.sampler
+  if sm == nil: return
+  let s = sm.shared
+  s.stop.store(true)
+  sm.token.cancel(crRequest)
+  joinThread(sm.thread)
+  withLock s.lock:
+    ctx.samplerLast = SamplerStats(running: false, rateHz: sm.rateHz, maxFrames: s.maxFrames,
+                                   maxAgeMs: s.maxAgeMs, grabs: s.grabs.load,
+                                   failures: s.failures.load, lastError: s.lastError)
+    s.frames = @[]
+    s.lastError = ""
+  deinitLock(s.lock)
+  deallocShared(s)
+  sm.token.free()
+  ctx.sampler = nil
+
+proc startSampler*(ctx: GuiContext; rateHz: float; maxFrames: int; maxAgeMs: int) =
+  ## Grabs the application's window `rateHz` times a second, between and
+  ## during the adapter's own reads, into a ring of at most `maxFrames`
+  ## frames none older than `maxAgeMs`, for `framesSince`. A sampler already
+  ## running is replaced. It stops when the stage's application is torn down
+  ## (the backend's `close`), or at `stopSampler`.
+  ctx.requireRunning()
+  if rateHz <= 0 or maxFrames < 1 or maxAgeMs < 1:
+    raise backendError(beInternal, "a sampler needs a positive rate, frame count and age")
+  ctx.stopSampler()
+  # the helper resolved here, once: the thread then finds it in its environment
+  var helper = ""
+  try: helper = helperPath(ctx.captureCfg, linuxX11Name, "x11_probe")
+  except gai.BackendError as e: raise gaFailure("finding the capture helper", e)
+  var env: seq[(string, string)]
+  for k, v in ctx.env:
+    if k != "GUI_ASSERT_HELPER_DIR": env.add (k, v)
+  env.add ("GUI_ASSERT_HELPER_DIR", helper.parentDir)
+  let dir = ctx.workDir / "sampler"
+  createDir(dir)
+  let s = cast[ptr SamplerShared](allocShared0(sizeof(SamplerShared)))
+  initLock(s.lock)
+  s.maxFrames = maxFrames
+  s.maxAgeMs = maxAgeMs
+  let sm = Sampler(shared: s, token: newCancelToken(), rateHz: rateHz)
+  createThread(sm.thread, samplerLoop, SamplerArgs(shared: s, token: sm.token, stateDir: dir,
+    env: env, rect: ctx.window, intervalMs: 1000.0 / rateHz))
+  ctx.sampler = sm
+
+proc samplerStats*(ctx: GuiContext): SamplerStats =
+  ## The running sampler's ring and counts now; the last counts of the one
+  ## stopped last (`running` false) when none runs.
+  let sm = ctx.sampler
+  if sm == nil: return ctx.samplerLast
+  let s = sm.shared
+  withLock s.lock:
+    let now = getMonoTime()
+    prune(s, now)
+    result = SamplerStats(running: true, rateHz: sm.rateHz, maxFrames: s.maxFrames,
+                          maxAgeMs: s.maxAgeMs, grabs: s.grabs.load, failures: s.failures.load,
+                          held: s.frames.len, lastError: s.lastError)
+    if s.frames.len > 0:
+      result.oldestAgeMs = ageMs(s.frames[0].at, now)
+      result.newestAgeMs = ageMs(s.frames[^1].at, now)
+
+proc framesSince*(ctx: GuiContext; t: MonoTime): seq[Frame] =
+  ## The sampled frames grabbed at or after `t` that the ring still holds,
+  ## oldest first; none without a sampler.
+  let sm = ctx.sampler
+  if sm == nil: return
+  let s = sm.shared
+  withLock s.lock:
+    prune(s, getMonoTime())
+    for f in s.frames:
+      if f.at >= t: result.add f
+
+proc sampledAfter(ctx: GuiContext; t: MonoTime; strict: bool): Option[Frame] =
+  ## The first sampled frame grabbed after `t` (at or after, unless `strict`).
+  let sm = ctx.sampler
+  if sm == nil: return
+  let s = sm.shared
+  withLock s.lock:
+    for f in s.frames:
+      if f.at > t or (not strict and f.at == t): return some(f)
+
+# --- settled ---------------------------------------------------------------------------
+
+proc windowStill*(): SettledRule =
+  ## The default meaning of `settled`: the window stopped changing
+  ## (`settleOver` on the frame source).
+  result = proc (ctx: GuiContext; frames: FrameSource; timeoutMs: int): bool =
+    settleOver(proc (): string = frames.next().image.pixels, getMonoTime,
+               proc (ms: int) = sleep(ms), timeoutMs)
+
+proc framesPresented*(n: int): SettledRule =
+  ## `settled` for a window that never stops changing: `n` more frames were
+  ## presented after the input, each seen as a frame different from the one
+  ## before it. The first frame of the source (the window at the input) is
+  ## the one they are counted from, so a frame the application drew while the
+  ## input was on its way counts as one of them at most: a binding asks for
+  ## two when its application takes an input into the frame after the one it
+  ## was drawing.
+  result = proc (ctx: GuiContext; frames: FrameSource; timeoutMs: int): bool =
+    let deadline = getMonoTime() + initDuration(milliseconds = timeoutMs)
+    var last = frames.next()
+    var seen = 0
+    while seen < n:
+      if getMonoTime() > deadline: return false
+      let f = frames.next()
+      if f.image.pixels != last.image.pixels: inc seen
+      last = f
+    true
+
+proc frameSource(a: Adapter): FrameSource =
+  let ctx = a.ctx
+  let since = (if ctx.lastInputAt > a.lastSettleAt: ctx.lastInputAt else: getMonoTime())
+  var cursor = since
+  var first = true
+  result.since = since
+  result.next = proc (): Frame =
+    if ctx.sampler != nil:
+      # the sampler's next frame; a grab of our own when it stalls (a frame
+      # source never waits longer than a few of the sampler's intervals)
+      let wait = getMonoTime() + initDuration(milliseconds = 250 + int(4000.0 / ctx.sampler.rateHz))
+      while getMonoTime() < wait:
+        let f = ctx.sampledAfter(cursor, strict = not first)
+        if f.isSome:
+          first = false
+          cursor = f.get.at
+          return f.get
+        sleep(2)
+    result = ctx.grab()
+    first = false
+    cursor = result.at
+
+proc settled(a: Adapter; timeoutMs = 5000): bool =
+  ## `settled` as the binding means it: its own rule when it has one, else
+  ## the window stopped changing.
+  if a.b.settled != nil:
+    result = a.b.settled(a.ctx, a.frameSource(), timeoutMs)
+  else:
+    result = a.settle(timeoutMs)
+  a.lastSettleAt = getMonoTime()
 
 proc refresh(a: Adapter) =
   a.ctx.requireRunning()
@@ -639,6 +901,7 @@ proc sendAction(a: Adapter; act: JsonNode) =
   else:
     raise backendError(beProtocol, "send: no input action in " & $act)
   a.idx.clear()
+  a.ctx.lastInputAt = getMonoTime()
   # an input can change what the pixels do not show (the pointer's shape
   # under a hover): the next read derives the surface afresh, even from an
   # unchanged frame (the OCR engine's results are kept per image, so that
@@ -697,7 +960,7 @@ proc newGuiAssertBackend*(binding: GuiBinding; defect = gdNone;
     let before = profile
     defer: profileLine("end-stage (launch settled)", msSince(t0), before)
     a.stageClosed = true
-    if a.ctx.running: discard a.settle()
+    if a.ctx.running: discard a.settled()
   result.resolveChord = proc (operation: string): Option[string] =
     if binding.resolveChord == nil: none(string) else: binding.resolveChord(a.ctx, operation)
   result.locate = proc (locator: JsonNode): LocateResult =
@@ -718,7 +981,7 @@ proc newGuiAssertBackend*(binding: GuiBinding; defect = gdNone;
       # the planted defect: reading clicks the instance with Ctrl
       let p = point(a.ctx.window.x + int(n.x) + 3, a.ctx.window.y + int(n.y + n.h / 2))
       a.deliver("clicking", proc () = discard a.ctx.input.click("", p, gai.mbLeft, 1, @["ctrl"]))
-      discard a.settle(1000)
+      discard a.settled(1000)
   result.send = proc (action: JsonNode) =
     let t0 = getMonoTime()
     let before = profile
@@ -737,7 +1000,7 @@ proc newGuiAssertBackend*(binding: GuiBinding; defect = gdNone;
     if a.pending.on:
       # nothing has been delivered since the last settled screen
       return true
-    if condition == "settled": return a.settle(timeoutMs)
+    if condition == "settled": return a.settled(timeoutMs)
     let deadline = getMonoTime() + initDuration(milliseconds = timeoutMs)
     while true:
       let met = binding.condition(a.ctx, a.ctx.grab(), condition)
@@ -781,6 +1044,8 @@ proc newGuiAssertBackend*(binding: GuiBinding; defect = gdNone;
     a.refresh()
     a.tree.hit(x, y)
   result.close = proc () =
+    # the sampler ends with the stage, before the application and the display it grabs
+    a.ctx.stopSampler()
     if a.recId.len > 0:
       try: discard a.ctx.capture.stopRecording(a.recId)
       except CatchableError: discard
