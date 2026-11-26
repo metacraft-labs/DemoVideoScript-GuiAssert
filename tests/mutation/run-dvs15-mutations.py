@@ -3,7 +3,8 @@
 
 Each arm is a defect in the adapter's two answers to such a window: a
 binding's own `settled` rule, and the sampler that keeps the frames between
-two reads. The kill command builds the tools and runs the restless suite
+two reads; and, found with them, a served adapter whose application's
+output reaches the protocol stream. The kill command builds the tools and runs the restless suite
 (`tests/test_restless.nim`) against the real applications on a private Xvfb.
 """
 import sys
@@ -23,6 +24,8 @@ ARMS = [
         "the sampler drops the frame between two reads (its ring keeps only the newest)"),
     Arm("S3", A, "    a.ctx.stopSampler()\n", "    discard\n",
         "the sampler outlives its stage: close leaves it grabbing"),
+    Arm("S4", A, "    if ctx.appLog.len > 0:\n", "    if false:\n",
+        "a served adapter's application writes into the protocol stream"),
 ]
 
 if __name__ == "__main__":

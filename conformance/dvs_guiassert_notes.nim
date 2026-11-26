@@ -20,7 +20,7 @@ when isMainModule:
     var defect = gdNone
     for a in args[1 .. ^1]:
       if a.startsWith("--defect="): defect = parseEnum[GuiDefect](a[9 .. ^1])
-    serveJsonLines(newGuiAssertBackend(notesBinding(), defect))
+    serveJsonLines(newGuiAssertBackend(notesBinding(), defect, serving = true))
     quit 0
   var builtins = initTable[string, BackendFactory]()
   builtins["guiassert"] = proc (): Backend = newGuiAssertBackend(notesBinding())

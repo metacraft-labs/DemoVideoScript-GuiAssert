@@ -7,3 +7,5 @@ roles:
 stages:
   launch-animate: ~
   launch-flash: ~
+  launch-chatty: ~
+  launch-chatty-exit: ~

@@ -92,6 +92,11 @@ type
     input: InputBackend
     ocr: OcrEngine
     ocrCache: Table[Hash, (string, seq[Word])]
+    appLog*: string
+      ## Where the application's standard output and error go, when they
+      ## must not reach this process's own (the adapter serving the protocol
+      ## on stdout: `newGuiAssertBackend(serving = true)`); "" when the
+      ## application shares this process's streams.
     lastInputAt*: MonoTime
       ## When the last input action was delivered (its end); the zero
       ## instant before the first.
@@ -260,15 +265,36 @@ proc startApp*(ctx: GuiContext; argv: seq[string]; title: string; timeoutMs = 20
   ## window, titled `title`, to be mapped; gives it the keyboard focus.
   ## With `titleContains` the window's title need only contain `title` — for
   ## an application that names its window after what it shows.
+  ##
+  ## When the adapter serves the protocol on its standard output, the
+  ## application's output must not land there (a line that is not JSON breaks
+  ## the protocol): its stdout and stderr go to `ctx.appLog` instead, named
+  ## on this process's stderr (the backend's log), in `ctx.state["appLog"]`,
+  ## and in the message of a start that fails.
   ctx.ensureDisplay()
   var env = newStringTable(modeCaseSensitive)
   for k, v in ctx.env: env[k] = v
   try:
-    ctx.app = startProcess(argv[0], args = argv[1 .. ^1], env = env,
-                           options = {poParentStreams})
+    if ctx.appLog.len > 0:
+      ctx.state["appLog"] = %ctx.appLog
+      stderr.writeLine "dvs-guiassert: the output of " & argv[0].extractFilename &
+        " goes to " & ctx.appLog
+      # the shell opens the log and becomes the application: its streams are
+      # the log's, and its input is not this process's (the protocol's)
+      ctx.app = startProcess("/bin/sh", args = @["-c", "exec \"$@\" >>\"$0\" 2>&1 </dev/null",
+                                                 ctx.appLog] & argv, env = env, options = {})
+    else:
+      ctx.app = startProcess(argv[0], args = argv[1 .. ^1], env = env,
+                             options = {poParentStreams})
   except OSError as e:
     raise backendError(beStage, "cannot start " & argv[0] & ": " & e.msg)
   ctx.running = true
+  proc appOutput(): string =
+    ## Where the application's output is, and how it ends, for a failure.
+    if ctx.appLog.len == 0: return ""
+    var tail = (try: readFile(ctx.appLog).strip except IOError: "")
+    if tail.len > 1000: tail = "…" & tail[^1000 .. ^1]
+    "; its output is in " & ctx.appLog & (if tail.len > 0: ", ending with: " & tail else: "")
   let deadline = getMonoTime() + initDuration(milliseconds = timeoutMs)
   while true:
     var found = false
@@ -284,10 +310,10 @@ proc startApp*(ctx: GuiContext; argv: seq[string]; title: string; timeoutMs = 20
     if found: break
     if not ctx.app.running:
       raise backendError(beStage, argv[0] & " exited (status " & $ctx.app.peekExitCode &
-        ") before its window appeared")
+        ") before its window appeared" & appOutput())
     if getMonoTime() > deadline:
       raise backendError(beStage, "no window titled " & (if titleContains: "with " else: "") &
-        "'" & title & "' within " & $timeoutMs & " ms")
+        "'" & title & "' within " & $timeoutMs & " ms" & appOutput())
     sleep(50)
   try: discard ctx.input.focusWindow("", ctx.windowId)
   except gai.BackendError as e: raise gaFailure("focusing the window", e)
@@ -931,7 +957,11 @@ proc frameOf*(png: string): Frame =
   Frame(image: decodePngRgb(readFile(png)))
 
 proc newGuiAssertBackend*(binding: GuiBinding; defect = gdNone;
-                          confidenceFloor = DefaultConfidenceFloor): Backend =
+                          confidenceFloor = DefaultConfidenceFloor; serving = false): Backend =
+  ## The adapter over `binding`. `serving` says this process's standard output
+  ## carries the protocol (`serveJsonLines`): the application's output then
+  ## goes to a log file of its own (`GuiContext.appLog`), which outlives the
+  ## backend for diagnosis.
   let work = getTempDir() / ("dvs-guiassert-" & $getCurrentProcessId() & "-" &
                              $(getMonoTime().ticks mod 1_000_000_000))
   createDir(work)
@@ -940,6 +970,9 @@ proc newGuiAssertBackend*(binding: GuiBinding; defect = gdNone;
   env.del("DISPLAY")
   let ctx = GuiContext(env: env, workDir: work, state: newJObject(),
                        confidenceFloor: confidenceFloor, ocr: newTesseractOcr())
+  if serving:
+    ctx.appLog = getTempDir() / ("dvs-guiassert-app-" & $getCurrentProcessId() & "-" &
+                                 $(getMonoTime().ticks mod 1_000_000_000) & ".log")
   let a = Adapter(b: binding, ctx: ctx, defect: defect)
   result = Backend()
   result.hello = proc (): Hello =

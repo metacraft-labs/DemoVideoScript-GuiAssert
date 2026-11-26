@@ -22,11 +22,17 @@
 ## stand-in for anything: each is the smallest application with the behaviour
 ## the binding has to cope with.
 ##
-##   restless --app animate|flash   an application
+## - `chatty` is `flash` that first prints a banner on its stdout and its
+##   stderr, as many applications do when they start; `chatty-exit` prints it
+##   and exits. They check that a served adapter keeps an application's output
+##   out of the protocol.
+##
+##   restless --app animate|flash|chatty|chatty-exit   an application
 ##   restless run …                 the `dvs` command line with the bindings linked in
+##   restless --serve               the `own` binding served over JSON lines
 
 import std/[json, options, os, tables]
-import demo_video_script/[backend, cli]
+import demo_video_script/[backend, cli, jsonlines]
 import demo_video_script_guiassert
 
 {.passl: "-lX11".}
@@ -64,6 +70,8 @@ const
   KeysRow = 140        ## `animate`: one square per key taken (y 130..150)
   FlashDelayMs* = 40   ## `flash`: from the key to the dark frame
   FlashMs* = 200       ## `flash`: how long the dark frame is shown
+  ChattyOut* = "restless: a banner on standard output"
+  ChattyErr* = "restless: a banner on standard error"
   KeyPress = 2
   Expose = 12
 
@@ -148,6 +156,8 @@ proc restlessBinding*(name: string; settled: SettledRule = nil; sampler = false;
       case use
       of "launch-animate": ctx.startApp(@[app, "--app", "animate"], "Restless")
       of "launch-flash": ctx.startApp(@[app, "--app", "flash"], "Flash")
+      of "launch-chatty": ctx.startApp(@[app, "--app", "chatty"], "Flash")
+      of "launch-chatty-exit": ctx.startApp(@[app, "--app", "chatty-exit"], "Flash")
       else: raise newException(ValueError, "no stage '" & use & "'")
       if withSampler: ctx.startSampler(rateHz = 50, maxFrames = 64, maxAgeMs = 4000),
     surface: proc (ctx: GuiContext; f: Frame): Tree =
@@ -166,7 +176,16 @@ when isMainModule:
     case paramStr(2)
     of "animate": animate()
     of "flash": flash()
+    of "chatty", "chatty-exit":
+      stdout.writeLine ChattyOut
+      stdout.flushFile()
+      stderr.writeLine ChattyErr
+      if paramStr(2) == "chatty-exit": quit 3
+      flash()
     else: quit "restless: no application '" & paramStr(2) & "'", 2
+    quit 0
+  if paramCount() >= 1 and paramStr(1) == "--serve":
+    serveJsonLines(newGuiAssertBackend(restlessBinding("own"), serving = true))
     quit 0
   var builtins = initTable[string, BackendFactory]()
   builtins["still"] = proc (): Backend = newGuiAssertBackend(restlessBinding("still"))

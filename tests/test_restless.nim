@@ -5,7 +5,8 @@
 ## scenarios, and through the adapter in process where the check is about the
 ## sampler's own state. No stand-ins.
 
-import std/[json, os, strutils, unittest, monotimes, times]
+import std/[json, os, options, strutils, unittest, monotimes, times]
+import demo_video_script/jsonlines
 import demo_video_script_guiassert
 import ./support/[runs, restless]
 
@@ -124,3 +125,51 @@ suite "the sampler":
     check not after.running
     sleep(600)
     check ctx.samplerStats.grabs == after.grabs
+
+suite "an application's output while the adapter serves":
+  # The real JSON-lines client (DemoVideoScript's), which refuses any line
+  # on the backend's stdout that is not a protocol response.
+  proc logOf(log: string): string =
+    ## The application log a served adapter names on its stderr.
+    for line in log.splitLines:
+      let i = line.find(" goes to ")
+      if line.startsWith("dvs-guiassert: the output of ") and i > 0: return line[i + 9 .. ^1]
+
+  test "the protocol stays JSON lines and the application's output is in its log":
+    let b = spawnJsonLinesBackend(tool, @["--serve"])
+    var path = ""
+    try:
+      discard b.hello()
+      b.stage("launch-chatty", %*{})
+      b.endStage()
+      # calls after the application has printed still get their answers
+      check b.hit(10, 10).isSome
+      check b.await("settled", "", 5000)
+      path = logOf(b.log())
+      checkpoint b.log()
+    finally:
+      b.close()
+    check path.len > 0
+    check fileExists(path)
+    let text = (try: readFile(path) except IOError: "")
+    checkpoint text
+    check ChattyOut in text
+    check ChattyErr in text
+    removeFile(path)
+
+  test "a start that fails names the log and how it ends":
+    let b = spawnJsonLinesBackend(tool, @["--serve"])
+    var msg = ""
+    try:
+      discard b.hello()
+      try: b.stage("launch-chatty-exit", %*{})
+      except BackendError as e: msg = e.msg
+    finally:
+      let path = logOf(b.log())
+      b.close()
+      if path.len > 0: removeFile(path)
+    checkpoint msg
+    check "exited (status 3)" in msg
+    check "its output is in " in msg
+    check ChattyOut in msg
+    check ChattyErr in msg
